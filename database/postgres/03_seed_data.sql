@@ -1,9 +1,11 @@
+DELETE FROM users WHERE username IN ('gerente1', 'inventario1', 'cajero1', 'cajero2');
+
 -- Insertar usuarios de prueba (password: 'password123' hasheado con bcrypt)
 INSERT INTO users (username, email, hashed_password, role) VALUES
-('gerente1', 'gerente@supermercado.com', '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewY5lk7qa8v0nRKK', 'gerente'),
-('inventario1', 'inventario@supermercado.com', '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewY5lk7qa8v0nRKK', 'inventario'),
-('cajero1', 'cajero1@supermercado.com', '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewY5lk7qa8v0nRKK', 'cajero'),
-('cajero2', 'cajero2@supermercado.com', '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewY5lk7qa8v0nRKK', 'cajero');
+('gerente1', 'gerente@supermercado.com', '$2b$12$AnehbzfVpf1otpAHlI6bh.SMG5Webavps1u.d.bCwwVZTAbPoL7mq', 'gerente'),
+('inventario1', 'inventario@supermercado.com', '$2b$12$AnehbzfVpf1otpAHlI6bh.SMG5Webavps1u.d.bCwwVZTAbPoL7mq', 'inventario'),
+('cajero1', 'cajero1@supermercado.com', '$2b$12$AnehbzfVpf1otpAHlI6bh.SMG5Webavps1u.d.bCwwVZTAbPoL7mq', 'cajero'),
+('cajero2', 'cajero2@supermercado.com', '$2b$12$AnehbzfVpf1otpAHlI6bh.SMG5Webavps1u.d.bCwwVZTAbPoL7mq', 'cajero');
 
 -- Insertar productos de ejemplo
 INSERT INTO products (sku, name, description, category, base_price) VALUES
