@@ -10,7 +10,7 @@ class Config:
     
     # JWT
     JWT_SECRET_KEY = os.getenv('JWT_SECRET_KEY', 'jwt-secret-change-in-production')
-    JWT_ACCESS_TOKEN_EXPIRES = timedelta(hours=2)
+    JWT_ACCESS_TOKEN_EXPIRES = timedelta(hours=24)
     
     # PostgreSQL (Fuente de la verdad)
     POSTGRES_HOST = os.getenv('POSTGRES_HOST', 'localhost')
