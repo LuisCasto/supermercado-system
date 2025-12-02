@@ -1,0 +1,19 @@
+### Inicialización Automática de MongoDB
+
+El sistema utiliza un script JavaScript que se ejecuta automáticamente
+en el primer inicio del contenedor:
+
+**Archivo:** `database/mongo/init_supermercado.js`
+
+**Funcionalidades:**
+- Verifica/crea usuario root con rol 'root'
+- Crea base de datos 'supermercado_sales'
+- Crea colección 'sales_tickets' con validación JSON Schema
+- Crea 5 índices optimizados para consultas
+- Crea usuario 'app_user' con permisos readWrite
+- Inserta documento de prueba para verificar funcionamiento
+
+**Validación JSON Schema:**
+El sistema implementa validación a nivel de base de datos para garantizar
+la integridad de los documentos insertados. Los campos requeridos son:
+sale_id, cashier_id, items, total, timestamp.

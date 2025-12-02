@@ -1,0 +1,15 @@
+# Entornos virtuales
+venv/
+ENV/
+env/
+
+# Archivos de entorno
+.env
+
+# __pycache__
+__pycache__/
+*.pyc
+
+# Carpetas de VSCode
+.vscode/
+
