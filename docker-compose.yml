@@ -1,0 +1,166 @@
+version: '3.8'
+
+services:
+  # ====================================
+  # PostgreSQL - Fuente de la verdad
+  # ====================================
+  postgres:
+    image: postgres:15-alpine
+    container_name: supermercado_postgres
+    environment:
+      POSTGRES_DB: supermercado_db
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: admin123
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./database/postgres:/docker-entrypoint-initdb.d:ro
+    networks:
+      - supermercado_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U admin -d supermercado_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  # ====================================
+  # MongoDB - Almacenamiento de tickets
+  # ====================================
+  mongodb:
+    image: mongo:7
+    container_name: supermercado_mongo
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: admin123
+      MONGO_INITDB_DATABASE: supermercado_sales
+    ports:
+      - "27018:27017"
+    volumes:
+      - mongo_data:/data/db
+      - ./database/mongo:/docker-entrypoint-initdb.d:ro
+    networks:
+      - supermercado_network
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    command: ["mongod", "--auth"]
+
+  # ====================================
+  # API Flask (incluye worker integrado)
+  # ====================================
+  api:
+    build:
+      context: .
+      dockerfile: app/Dockerfile
+    container_name: supermercado_api
+    environment:
+      # Flask
+      FLASK_ENV: production
+      FLASK_DEBUG: "False"
+      FLASK_HOST: 0.0.0.0
+      FLASK_PORT: 5000
+      
+      # Secrets
+      SECRET_KEY: ${SECRET_KEY:-change-this-in-production-abc123xyz}
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY:-change-jwt-secret-in-production}
+      
+      # PostgreSQL
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_DB: supermercado_db
+      POSTGRES_USER: app_user
+      POSTGRES_PASSWORD: apppass123
+      
+      # MongoDB
+      MONGO_HOST: mongodb
+      MONGO_PORT: 27017
+      MONGO_DB: supermercado_sales
+      MONGO_USER: app_user
+      MONGO_PASSWORD: apppass123
+      
+      # Worker
+      OUTBOX_POLL_INTERVAL: 5
+      OUTBOX_BATCH_SIZE: 10
+      OUTBOX_MAX_RETRIES: 3
+      
+      # Logging
+      LOG_LEVEL: INFO
+    
+    ports:
+      - "5000:5000"
+    
+    volumes:
+      - ./logs:/app/logs
+    
+    networks:
+      - supermercado_network
+    
+    depends_on:
+      postgres:
+        condition: service_healthy
+      mongodb:
+        condition: service_healthy
+    
+    restart: unless-stopped
+    
+    healthcheck:
+      test: ["CMD", "python", "-c", "import requests; requests.get('http://localhost:5000/health', timeout=5)"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # ====================================
+  # Worker Outbox (OPCIONAL - Separado)
+  # ====================================
+  # Descomenta si quieres ejecutar el worker como servicio separado
+  # En la configuración actual, el worker está integrado en la API
+  
+  # worker:
+  #   build:
+  #     context: .
+  #     dockerfile: worker/Dockerfile
+  #   container_name: supermercado_worker
+  #   environment:
+  #     POSTGRES_HOST: postgres
+  #     POSTGRES_PORT: 5432
+  #     POSTGRES_DB: supermercado_db
+  #     POSTGRES_USER: app_user
+  #     POSTGRES_PASSWORD: apppass123
+  #     MONGO_HOST: mongodb
+  #     MONGO_PORT: 27017
+  #     MONGO_DB: supermercado_sales
+  #     MONGO_USER: app_user
+  #     MONGO_PASSWORD: apppass123
+  #     OUTBOX_POLL_INTERVAL: 5
+  #     OUTBOX_BATCH_SIZE: 10
+  #     LOG_LEVEL: INFO
+  #   networks:
+  #     - supermercado_network
+  #   depends_on:
+  #     postgres:
+  #       condition: service_healthy
+  #     mongodb:
+  #       condition: service_healthy
+  #   restart: unless-stopped
+
+# ====================================
+# Volúmenes persistentes
+# ====================================
+volumes:
+  postgres_data:
+    driver: local
+  mongo_data:
+    driver: local
+
+# ====================================
+# Red interna
+# ====================================
+networks:
+  supermercado_network:
+    driver: bridge

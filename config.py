@@ -14,7 +14,7 @@ class Config:
     
     # PostgreSQL (Fuente de la verdad)
     POSTGRES_HOST = os.getenv('POSTGRES_HOST', 'localhost')
-    POSTGRES_PORT = int(os.getenv('POSTGRES_PORT', '5433'))  # ← Tu puerto, se puede cambiar al OG, el de serie pues
+    POSTGRES_PORT = int(os.getenv('POSTGRES_PORT', '5433'))
     POSTGRES_DB = os.getenv('POSTGRES_DB', 'supermercado_db')
     POSTGRES_USER = os.getenv('POSTGRES_USER', 'app_user')
     POSTGRES_PASSWORD = os.getenv('POSTGRES_PASSWORD', 'apppass123')
@@ -25,11 +25,11 @@ class Config:
         f"{POSTGRES_HOST}:{POSTGRES_PORT}/{POSTGRES_DB}"
     )
     SQLALCHEMY_TRACK_MODIFICATIONS = False
-    SQLALCHEMY_ECHO = DEBUG  # Log de queries SQL en desarrollo
+    SQLALCHEMY_ECHO = DEBUG
     
     # MongoDB (Almacenamiento de tickets)
     MONGO_HOST = os.getenv('MONGO_HOST', 'localhost')
-    MONGO_PORT = int(os.getenv('MONGO_PORT', '27018'))  # ← Tu puerto
+    MONGO_PORT = int(os.getenv('MONGO_PORT', '27018'))
     MONGO_DB = os.getenv('MONGO_DB', 'supermercado_sales')
     MONGO_USER = os.getenv('MONGO_USER', 'app_user')
     MONGO_PASSWORD = os.getenv('MONGO_PASSWORD', 'apppass123')
@@ -41,11 +41,11 @@ class Config:
     )
     
     # Configuración del Worker Outbox
-    OUTBOX_POLL_INTERVAL = 5  # segundos
-    OUTBOX_BATCH_SIZE = 10     # eventos por iteración
+    OUTBOX_POLL_INTERVAL = 5
+    OUTBOX_BATCH_SIZE = 10
     OUTBOX_MAX_RETRIES = 3
     
-    # CORS (para frontend)
+    # CORS
     CORS_ORIGINS = os.getenv('CORS_ORIGINS', 'http://localhost:3000').split(',')
     
     # Logging
@@ -76,6 +76,8 @@ class ProductionConfig(Config):
         import logging
         from logging.handlers import RotatingFileHandler
         
+        os.makedirs('logs', exist_ok=True)
+        
         file_handler = RotatingFileHandler(
             'logs/supermercado.log',
             maxBytes=10240000,  # 10MB
@@ -88,10 +90,21 @@ class ProductionConfig(Config):
 class TestingConfig(Config):
     """Configuración para tests"""
     TESTING = True
-    SQLALCHEMY_DATABASE_URI = 'sqlite:///:memory:'
     
-    # MongoDB de prueba
+    # SQLite en memoria para tests (más rápido)
+    SQLALCHEMY_DATABASE_URI = 'sqlite:///:memory:'
+    SQLALCHEMY_ECHO = False
+    
+    # MongoDB de prueba (usar base de datos diferente)
     MONGO_DB = 'supermercado_sales_test'
+    MONGO_URI = (
+        f"mongodb://{Config.MONGO_USER}:{Config.MONGO_PASSWORD}@"
+        f"{Config.MONGO_HOST}:{Config.MONGO_PORT}/{MONGO_DB}?authSource=supermercado_sales"
+    )
+    
+    # Worker más rápido para tests
+    OUTBOX_POLL_INTERVAL = 1  # 1 segundo en vez de 5
+    OUTBOX_BATCH_SIZE = 5
 
 
 # Diccionario de configuraciones
