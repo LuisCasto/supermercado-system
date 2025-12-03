@@ -46,6 +46,12 @@ def create_app(config_name='default'):
     # Registrar manejadores de errores
     register_error_handlers(app)
     
+    # Inicializar Outbox Worker (solo si no estamos en testing)
+    if not app.config.get('TESTING'):
+        from worker.outbox_worker import init_worker
+        init_worker(app)
+        logger.info("✓ Outbox Worker inicializado")
+    
     # Health check endpoint
     @app.route('/health', methods=['GET'])
     def health_check():
