@@ -4,6 +4,7 @@ Modelo OutboxEvent - Patrón Outbox para consistencia eventual
 from sqlalchemy import Column, Integer, String, Text, DateTime, CheckConstraint, Index
 from sqlalchemy.sql import func
 from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy import JSON
 from app.utils.db_postgres import Base
 
 
@@ -13,7 +14,10 @@ class OutboxEvent(Base):
     id = Column(Integer, primary_key=True)
     event_type = Column(String(50), nullable=False)
     aggregate_id = Column(String(100), nullable=False, index=True)
-    payload = Column(JSONB, nullable=False)
+    
+    # Usar JSON genérico (compatible con SQLite) en lugar de JSONB específico de Postgres
+    payload = Column(JSON, nullable=False)
+    
     status = Column(String(20), nullable=False, default='PENDING')
     retry_count = Column(Integer, default=0)
     error_message = Column(Text)

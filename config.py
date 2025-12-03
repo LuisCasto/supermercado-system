@@ -91,11 +91,12 @@ class TestingConfig(Config):
     """Configuración para tests"""
     TESTING = True
     
-    # SQLite en memoria para tests (más rápido)
+    # ✅ USAR SQLITE EN MEMORIA (no necesita PostgreSQL)
     SQLALCHEMY_DATABASE_URI = 'sqlite:///:memory:'
+    SQLALCHEMY_TRACK_MODIFICATIONS = False
     SQLALCHEMY_ECHO = False
     
-    # MongoDB de prueba (usar base de datos diferente)
+    # MongoDB de prueba (usar base separada)
     MONGO_DB = 'supermercado_sales_test'
     MONGO_URI = (
         f"mongodb://{Config.MONGO_USER}:{Config.MONGO_PASSWORD}@"
@@ -103,8 +104,9 @@ class TestingConfig(Config):
     )
     
     # Worker más rápido para tests
-    OUTBOX_POLL_INTERVAL = 1  # 1 segundo en vez de 5
+    OUTBOX_POLL_INTERVAL = 2
     OUTBOX_BATCH_SIZE = 5
+    OUTBOX_MAX_RETRIES = 3
 
 
 # Diccionario de configuraciones
