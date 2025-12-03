@@ -48,9 +48,13 @@ def create_app(config_name='default'):
     
     # Inicializar Outbox Worker (solo si no estamos en testing)
     if not app.config.get('TESTING'):
-        from worker.outbox_worker import init_worker
-        init_worker(app)
-        logger.info("✓ Outbox Worker inicializado")
+        logger.info("→ Intentando inicializar Outbox Worker...")
+        try:
+            from worker.outbox_worker import init_worker
+            worker = init_worker(app)
+            logger.info(f"✓ Outbox Worker inicializado: {worker}")
+        except Exception as e:
+            logger.error(f"✗ Error al inicializar worker: {e}", exc_info=True)
     
     # Health check endpoint
     @app.route('/health', methods=['GET'])

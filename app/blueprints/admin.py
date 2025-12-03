@@ -272,7 +272,37 @@ def retry_failed_event(current_user, event_id):
             'message': 'Ocurrió un error al reintentar el evento'
         }), 500
 
-
+@admin_bp.route('/outbox/process-now', methods=['POST'])
+@token_required
+@gerente_only
+def process_outbox_now(current_user):
+    """
+    Procesar eventos del outbox manualmente
+    Solo gerentes - Útil para debugging
+    """
+    try:
+        from worker.outbox_worker import OutboxWorker
+        from flask import current_app
+        
+        worker = OutboxWorker(current_app._get_current_object())
+        
+        with current_app.app_context():
+            worker._process_batch()
+        
+        logger.info(f"Procesamiento manual del outbox por {current_user['username']}")
+        
+        return jsonify({
+            'message': 'Eventos procesados exitosamente',
+            'note': 'Revisa los logs para ver los detalles'
+        }), 200
+    
+    except Exception as e:
+        logger.error(f"Error procesando outbox manualmente: {e}")
+        return jsonify({
+            'error': 'Error interno',
+            'message': str(e)
+        }), 500
+    
 @admin_bp.route('/metrics', methods=['GET'])
 @token_required
 @gerente_only
