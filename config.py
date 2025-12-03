@@ -91,16 +91,20 @@ class TestingConfig(Config):
     """Configuración para tests"""
     TESTING = True
     
-    # ✅ USAR SQLITE EN MEMORIA (no necesita PostgreSQL)
-    SQLALCHEMY_DATABASE_URI = 'sqlite:///:memory:'
+    # ✅ SQLite con archivo temporal (compartido entre threads)
+    import tempfile
+    import os as _os
+    _test_db = _os.path.join(tempfile.gettempdir(), 'test_supermercado.db')
+    SQLALCHEMY_DATABASE_URI = f'sqlite:///{_test_db}'
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     SQLALCHEMY_ECHO = False
     
-    # MongoDB de prueba (usar base separada)
-    MONGO_DB = 'supermercado_sales_test'
+    # ✅ MongoDB: USAR LA MISMA BASE (con limpieza en tests)
+    # Esto evita problemas de permisos
+    MONGO_DB = 'supermercado_sales_test'  # ← Misma base que desarrollo
     MONGO_URI = (
         f"mongodb://{Config.MONGO_USER}:{Config.MONGO_PASSWORD}@"
-        f"{Config.MONGO_HOST}:{Config.MONGO_PORT}/{MONGO_DB}?authSource=supermercado_sales"
+        f"{Config.MONGO_HOST}:{Config.MONGO_PORT}/{MONGO_DB}?authSource={MONGO_DB}"
     )
     
     # Worker más rápido para tests

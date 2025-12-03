@@ -9,7 +9,7 @@ from app import create_app
 from app.utils.db_postgres import db_postgres, Base
 from app.utils.db_mongo import db_mongo
 from app.models import User, Product, ProductBatch, OutboxEvent, InventoryMovement
-from worker.outbox_worker import init_worker, get_worker
+from worker.outbox_worker import init_worker, get_worker, stop_worker
 
 
 @pytest.fixture(scope='module')
@@ -18,10 +18,10 @@ def app():
     app = create_app('testing')
     
     with app.app_context():
-        # Crear tablas
+        # ✅ CREAR TABLAS PRIMERO
         Base.metadata.create_all(bind=db_postgres.engine)
         
-        # Inicializar worker
+        # ✅ AHORA SÍ INICIALIZAR WORKER (después de crear tablas)
         worker = init_worker(app)
         
         yield app
@@ -37,6 +37,16 @@ def app():
             mongo_db['sales_tickets'].delete_many({})
         except:
             pass
+        
+        # ✅ LIMPIAR ARCHIVO SQLite TEMPORAL
+        import os
+        import tempfile
+        test_db = os.path.join(tempfile.gettempdir(), 'test_supermercado.db')
+        if os.path.exists(test_db):
+            try:
+                os.remove(test_db)
+            except:
+                pass
 
 
 @pytest.fixture
@@ -49,6 +59,7 @@ def client(app):
 def clean_test_data(app):
     """Limpiar datos antes de cada test"""
     with app.app_context():
+        # Limpiar PostgreSQL/SQLite
         session = db_postgres.get_session()
         try:
             session.execute(text('DELETE FROM inventory_movements'))
@@ -62,9 +73,27 @@ def clean_test_data(app):
         finally:
             session.close()
         
+        # ✅ Limpiar MongoDB SOLO de datos de test
         try:
             mongo_db = db_mongo.get_db()
-            mongo_db['sales_tickets'].delete_many({})
+            # Eliminar solo tickets con sale_id de test (que empiezan con SALE-)
+            # Para evitar eliminar datos reales si compartes la base
+            result = mongo_db['sales_tickets'].delete_many({
+                'sale_id': {'$regex': '^SALE-'}
+            })
+            print(f"🧹 MongoDB limpiado: {result.deleted_count} documentos eliminados")
+        except Exception as e:
+            print(f"⚠️ Error limpiando MongoDB: {e}")
+    
+    yield  # Ejecutar test
+    
+    # Limpiar después también
+    with app.app_context():
+        try:
+            mongo_db = db_mongo.get_db()
+            mongo_db['sales_tickets'].delete_many({
+                'sale_id': {'$regex': '^SALE-'}
+            })
         except:
             pass
 
@@ -172,9 +201,9 @@ def test_complete_sale_flow(client, auth_headers, sample_product, app):
         print(f"✓ Evento outbox creado (ID: {outbox_event_id})")
         session.close()
     
-    # 4. Esperar worker
-    print("⏳ Esperando worker (3 segundos)...")
-    time.sleep(3)
+    # 4. Esperar worker (aumentar tiempo para dar margen)
+    print("⏳ Esperando worker (5 segundos)...")
+    time.sleep(5)
     
     # 5. Verificar procesado
     with app.app_context():
@@ -183,6 +212,7 @@ def test_complete_sale_flow(client, auth_headers, sample_product, app):
         
         if event.status != 'COMPLETED':
             print(f"❌ Evento no procesado. Estado: {event.status}")
+            print(f"   Retry count: {event.retry_count}")
             print(f"   Error: {event.error_message}")
         
         assert event.status == 'COMPLETED', f"Estado: {event.status}, Error: {event.error_message}"
