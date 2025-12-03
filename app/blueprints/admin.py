@@ -391,3 +391,169 @@ def system_metrics(current_user):
             'error': 'Error interno',
             'message': 'Ocurrió un error al obtener las métricas'
         }), 500
+
+
+@admin_bp.route('/backup/postgres', methods=['POST'])
+@token_required
+@gerente_only
+def trigger_postgres_backup(current_user):
+    """
+    Ejecutar backup de PostgreSQL manualmente
+    Solo gerentes
+    """
+    import subprocess
+    import os
+    
+    try:
+        script_path = os.path.join(os.getcwd(), 'scripts', 'backup_postgres.sh')
+        
+        if not os.path.exists(script_path):
+            return jsonify({
+                'error': 'Script no encontrado',
+                'message': f'No se encontró el script en: {script_path}'
+            }), 404
+        
+        logger.info(f"Backup PostgreSQL iniciado por {current_user['username']}")
+        
+        # Ejecutar script en background
+        result = subprocess.run(
+            ['bash', script_path],
+            capture_output=True,
+            text=True,
+            timeout=300  # 5 minutos máximo
+        )
+        
+        if result.returncode == 0:
+            return jsonify({
+                'message': 'Backup de PostgreSQL completado exitosamente',
+                'output': result.stdout,
+                'triggered_by': current_user['username']
+            }), 200
+        else:
+            return jsonify({
+                'error': 'Error en backup',
+                'message': 'El script falló',
+                'output': result.stderr
+            }), 500
+    
+    except subprocess.TimeoutExpired:
+        return jsonify({
+            'error': 'Timeout',
+            'message': 'El backup tardó más de 5 minutos'
+        }), 500
+    except Exception as e:
+        logger.error(f"Error ejecutando backup PostgreSQL: {e}")
+        return jsonify({
+            'error': 'Error interno',
+            'message': str(e)
+        }), 500
+
+
+@admin_bp.route('/backup/mongodb', methods=['POST'])
+@token_required
+@gerente_only
+def trigger_mongo_backup(current_user):
+    """
+    Ejecutar backup de MongoDB manualmente
+    Solo gerentes
+    """
+    import subprocess
+    import os
+    
+    try:
+        script_path = os.path.join(os.getcwd(), 'scripts', 'backup_mongo.sh')
+        
+        if not os.path.exists(script_path):
+            return jsonify({
+                'error': 'Script no encontrado',
+                'message': f'No se encontró el script en: {script_path}'
+            }), 404
+        
+        logger.info(f"Backup MongoDB iniciado por {current_user['username']}")
+        
+        result = subprocess.run(
+            ['bash', script_path],
+            capture_output=True,
+            text=True,
+            timeout=300
+        )
+        
+        if result.returncode == 0:
+            return jsonify({
+                'message': 'Backup de MongoDB completado exitosamente',
+                'output': result.stdout,
+                'triggered_by': current_user['username']
+            }), 200
+        else:
+            return jsonify({
+                'error': 'Error en backup',
+                'message': 'El script falló',
+                'output': result.stderr
+            }), 500
+    
+    except subprocess.TimeoutExpired:
+        return jsonify({
+            'error': 'Timeout',
+            'message': 'El backup tardó más de 5 minutos'
+        }), 500
+    except Exception as e:
+        logger.error(f"Error ejecutando backup MongoDB: {e}")
+        return jsonify({
+            'error': 'Error interno',
+            'message': str(e)
+        }), 500
+
+
+@admin_bp.route('/backup/all', methods=['POST'])
+@token_required
+@gerente_only
+def trigger_full_backup(current_user):
+    """
+    Ejecutar backup completo (PostgreSQL + MongoDB)
+    Solo gerentes
+    """
+    import subprocess
+    import os
+    
+    try:
+        script_path = os.path.join(os.getcwd(), 'scripts', 'backup_all.sh')
+        
+        if not os.path.exists(script_path):
+            return jsonify({
+                'error': 'Script no encontrado',
+                'message': f'No se encontró el script en: {script_path}'
+            }), 404
+        
+        logger.info(f"Backup completo iniciado por {current_user['username']}")
+        
+        result = subprocess.run(
+            ['bash', script_path],
+            capture_output=True,
+            text=True,
+            timeout=600  # 10 minutos para backup completo
+        )
+        
+        if result.returncode == 0:
+            return jsonify({
+                'message': 'Backup completo exitoso (PostgreSQL + MongoDB)',
+                'output': result.stdout,
+                'triggered_by': current_user['username']
+            }), 200
+        else:
+            return jsonify({
+                'error': 'Error en backup',
+                'message': 'El script falló',
+                'output': result.stderr
+            }), 500
+    
+    except subprocess.TimeoutExpired:
+        return jsonify({
+            'error': 'Timeout',
+            'message': 'El backup tardó más de 10 minutos'
+        }), 500
+    except Exception as e:
+        logger.error(f"Error ejecutando backup completo: {e}")
+        return jsonify({
+            'error': 'Error interno',
+            'message': str(e)
+        }), 500
