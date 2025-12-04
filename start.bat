@@ -1,36 +1,106 @@
 @echo off
 REM ============================================
-REM Script de Inicio Rapido para Windows
+REM Script de Inicio Rápido para Windows
 REM Sistema de Supermercado
 REM ============================================
 
+
+
 REM ====================================
-REM 1. VERIFICAR DEPENDENCIAS
+REM 1. VERIFICAR E INSTALAR DEPENDENCIAS
 REM ====================================
-echo → Verificando dependencias...
+echo → Verificando dependencias del sistema...
+echo.
+
+set MISSING_DEPS=0
 
 where docker >nul 2>&1
 if %errorlevel% neq 0 (
     echo ✗ Docker no está instalado
-    pause
-    exit /b 1
+    set MISSING_DEPS=1
 )
 
 where python >nul 2>&1
 if %errorlevel% neq 0 (
     echo ✗ Python no está instalado
-    pause
-    exit /b 1
+    set MISSING_DEPS=1
 )
 
 where node >nul 2>&1
 if %errorlevel% neq 0 (
     echo ✗ Node.js no está instalado
+    set MISSING_DEPS=1
+)
+
+if %MISSING_DEPS%==1 (
+    echo.
+    echo ❌ DEPENDENCIAS FALTANTES
+    echo.
+    echo Por favor instala las siguientes herramientas:
+    echo.
+    
+    where docker >nul 2>&1
+    if %errorlevel% neq 0 (
+        echo 🐳 Docker Desktop:
+        echo    https://www.docker.com/products/docker-desktop
+        echo.
+    )
+    
+    where python >nul 2>&1
+    if %errorlevel% neq 0 (
+        echo 🐍 Python 3.11+:
+        echo    https://www.python.org/downloads/
+        echo    ⚠ Marca "Add Python to PATH" durante la instalación
+        echo.
+    )
+    
+    where node >nul 2>&1
+    if %errorlevel% neq 0 (
+        echo 📗 Node.js 20+:
+        echo    https://nodejs.org/
+        echo.
+    )
+    
+    echo Después de instalar, reinicia la terminal y ejecuta este script nuevamente.
+    echo.
     pause
     exit /b 1
 )
 
 echo ✓ Todas las dependencias están instaladas
+
+REM Verificar que Docker Desktop esté corriendo
+docker info >nul 2>&1
+if %errorlevel% neq 0 (
+    echo.
+    echo ⚠ Docker Desktop no está corriendo
+    echo → Intentando iniciar Docker Desktop...
+    
+    start "" "C:\Program Files\Docker\Docker\Docker Desktop.exe"
+    
+    echo → Esperando a que Docker inicie...
+    timeout /t 20 /nobreak >nul
+    
+    REM Esperar hasta que Docker esté disponible (máximo 60 segundos)
+    set DOCKER_WAIT=0
+    :DOCKER_WAIT_LOOP
+    docker info >nul 2>&1
+    if %errorlevel% neq 0 (
+        if %DOCKER_WAIT% lss 30 (
+            set /a DOCKER_WAIT+=1
+            timeout /t 2 /nobreak >nul
+            goto DOCKER_WAIT_LOOP
+        ) else (
+            echo ✗ Docker no pudo iniciarse
+            echo Por favor inicia Docker Desktop manualmente y ejecuta este script nuevamente
+            pause
+            exit /b 1
+        )
+    )
+    
+    echo ✓ Docker Desktop iniciado
+)
+
 echo.
 
 REM ====================================
@@ -125,11 +195,7 @@ REM 8. RESUMEN
 REM ====================================
 timeout /t 8 /nobreak >nul
 
-echo.
-echo.
-echo SISTEMA INICIADO CORRECTAMENTE       
-echo.
-echo.
+
 echo 📍 URLs de Acceso:
 echo    Frontend:  http://localhost:5173
 echo    Backend:   http://localhost:5000/health
