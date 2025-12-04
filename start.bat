@@ -20,9 +20,12 @@ if %errorlevel% neq 0 (
     set MISSING_DEPS=1
 )
 
-where python >nul 2>&1
+REM --- VERIFICAR QUE EXISTA PYTHON 3.11 ---
+where python3.11 >nul 2>&1
 if %errorlevel% neq 0 (
-    echo ✗ Python no está instalado
+    echo ✗ Python 3.11 no está instalado
+    echo     → Instálalo desde https://www.python.org/downloads/
+    echo     → Asegúrate de activar "Add Python to PATH"
     set MISSING_DEPS=1
 )
 
@@ -35,33 +38,6 @@ if %errorlevel% neq 0 (
 if %MISSING_DEPS%==1 (
     echo.
     echo ❌ DEPENDENCIAS FALTANTES
-    echo.
-    echo Por favor instala las siguientes herramientas:
-    echo.
-    
-    where docker >nul 2>&1
-    if %errorlevel% neq 0 (
-        echo 🐳 Docker Desktop:
-        echo    https://www.docker.com/products/docker-desktop
-        echo.
-    )
-    
-    where python >nul 2>&1
-    if %errorlevel% neq 0 (
-        echo 🐍 Python 3.11+:
-        echo    https://www.python.org/downloads/
-        echo    ⚠ Marca "Add Python to PATH" durante la instalación
-        echo.
-    )
-    
-    where node >nul 2>&1
-    if %errorlevel% neq 0 (
-        echo 📗 Node.js 20+:
-        echo    https://nodejs.org/
-        echo.
-    )
-    
-    echo Después de instalar, reinicia la terminal y ejecuta este script nuevamente.
     echo.
     pause
     exit /b 1
@@ -81,7 +57,6 @@ if %errorlevel% neq 0 (
     echo → Esperando a que Docker inicie...
     timeout /t 20 /nobreak >nul
     
-    REM Esperar hasta que Docker esté disponible (máximo 60 segundos)
     set DOCKER_WAIT=0
     :DOCKER_WAIT_LOOP
     docker info >nul 2>&1
@@ -92,7 +67,6 @@ if %errorlevel% neq 0 (
             goto DOCKER_WAIT_LOOP
         ) else (
             echo ✗ Docker no pudo iniciarse
-            echo Por favor inicia Docker Desktop manualmente y ejecuta este script nuevamente
             pause
             exit /b 1
         )
@@ -131,8 +105,8 @@ REM ====================================
 echo → Configurando backend...
 
 if not exist venv (
-    echo   Creando entorno virtual...
-    python -m venv venv
+    echo   Creando entorno virtual con Python 3.11...
+    python3.11 -m venv venv
 )
 
 echo   Activando entorno virtual...
@@ -149,10 +123,8 @@ REM 5. INICIAR BACKEND
 REM ====================================
 echo → Iniciando servidor backend...
 
-REM Crear directorio de logs
 if not exist logs mkdir logs
 
-REM Iniciar backend en nueva ventana
 start "Backend - Flask" cmd /k "venv\Scripts\activate.bat && python run.py"
 
 echo ✓ Backend iniciado en nueva ventana
@@ -182,7 +154,6 @@ REM 7. INICIAR FRONTEND
 REM ====================================
 echo → Iniciando servidor frontend...
 
-REM Iniciar frontend en nueva ventana
 start "Frontend - React" cmd /k "npm run dev"
 
 cd ..
@@ -194,7 +165,6 @@ REM ====================================
 REM 8. RESUMEN
 REM ====================================
 timeout /t 8 /nobreak >nul
-
 
 echo 📍 URLs de Acceso:
 echo    Frontend:  http://localhost:5173
@@ -214,7 +184,6 @@ echo    Cierra las ventanas de Backend y Frontend
 echo    Ejecuta: docker-compose -f docker-compose-dbs.yml down
 echo.
 
-REM Abrir navegador automáticamente
 timeout /t 3 /nobreak >nul
 start http://localhost:5173
 
