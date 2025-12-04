@@ -4,7 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { api } from '../services/api';
 import { Card, Button } from '../components/UI';
 
-const Dashboard = () => {
+const Dashboard = ({ onNavigate }) => {
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
   const { user } = useAuth();
@@ -84,15 +84,30 @@ const Dashboard = () => {
       <Card title="Acciones Rápidas">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {(user?.role === 'cajero' || user?.role === 'gerente') && (
-            <Button variant="primary" icon={Plus} className="w-full justify-center">
+            <Button 
+              variant="primary" 
+              icon={Plus} 
+              className="w-full justify-center"
+              onClick={() => onNavigate && onNavigate('sales')}
+            >
               Nueva Venta
             </Button>
           )}
-          <Button variant="secondary" icon={Package} className="w-full justify-center">
+          <Button 
+            variant="secondary" 
+            icon={Package} 
+            className="w-full justify-center"
+            onClick={() => onNavigate && onNavigate('inventory')}
+          >
             Consultar Inventario
           </Button>
           {user?.role === 'gerente' && (
-            <Button variant="secondary" icon={BarChart3} className="w-full justify-center">
+            <Button 
+              variant="secondary" 
+              icon={BarChart3} 
+              className="w-full justify-center"
+              onClick={() => onNavigate && onNavigate('reports')}
+            >
               Ver Reportes
             </Button>
           )}

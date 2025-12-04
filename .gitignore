@@ -15,5 +15,9 @@ __pycache__/
 
 extras/
 
+tests/
+
+pytest.ini
+
 
 .pytest_cache/

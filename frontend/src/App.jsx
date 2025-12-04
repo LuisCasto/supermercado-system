@@ -26,10 +26,10 @@ const AppContent = () => {
     return <LoginPage />;
   }
 
-  const renderPage = () => {
+const renderPage = () => {
     switch (currentPage) {
       case 'dashboard':
-        return <Dashboard />;
+        return <Dashboard onNavigate={setCurrentPage} />;
       case 'products':
         return <ProductsPage />;
       case 'inventory':
@@ -41,7 +41,7 @@ const AppContent = () => {
       case 'admin':
         return <AdminPage />;
       default:
-        return <Dashboard />;
+        return <Dashboard onNavigate={setCurrentPage} />;
     }
   };
 

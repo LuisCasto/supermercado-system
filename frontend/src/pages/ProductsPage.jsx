@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../services/api';
 import { Button, Card, Input, Modal, LoadingSpinner, Alert } from '../components/UI';
+import { Edit2, Trash2, RotateCcw } from 'lucide-react';
 
 const ProductsPage = () => {
   const [products, setProducts] = useState([]);
@@ -10,6 +11,7 @@ const ProductsPage = () => {
   const [showModal, setShowModal] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
   const [error, setError] = useState('');
+  const [showInactive, setShowInactive] = useState(false);
   const [formData, setFormData] = useState({
     sku: '',
     name: '',
@@ -21,11 +23,12 @@ const ProductsPage = () => {
 
   useEffect(() => {
     loadProducts();
-  }, [search]);
+  }, [search, showInactive]);
 
   const loadProducts = async () => {
     try {
-      const data = await api.get(`/products?search=${search}&include_stock=true`);
+      const activeParam = showInactive ? 'false' : 'true';
+      const data = await api.get(`/products?search=${search}&include_stock=true&active=${activeParam}`);
       setProducts(data.products || []);
       setError('');
     } catch (error) {
@@ -74,6 +77,16 @@ const ProductsPage = () => {
     }
   };
 
+  const handleReactivate = async (productId) => {
+    if (!confirm('¿Deseas reactivar este producto?')) return;
+    try {
+      await api.put(`/products/${productId}`, { active: true });
+      loadProducts();
+    } catch (error) {
+      setError(error.message);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex justify-center py-12">
@@ -86,17 +99,27 @@ const ProductsPage = () => {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h2 className="text-2xl font-bold text-gray-800">Productos</h2>
-        {user?.role === 'gerente' && (
-          <Button
-            onClick={() => {
-              setEditingProduct(null);
-              setFormData({ sku: '', name: '', description: '', category: '', base_price: '' });
-              setShowModal(true);
-            }}
-          >
-            + Nuevo Producto
-          </Button>
-        )}
+        <div className="flex gap-2">
+          {user?.role === 'gerente' && (
+            <>
+              <Button
+                variant={showInactive ? 'secondary' : 'ghost'}
+                onClick={() => setShowInactive(!showInactive)}
+              >
+                {showInactive ? '✅ Ver Activos' : '🚫 Ver Inactivos'}
+              </Button>
+              <Button
+                onClick={() => {
+                  setEditingProduct(null);
+                  setFormData({ sku: '', name: '', description: '', category: '', base_price: '' });
+                  setShowModal(true);
+                }}
+              >
+                + Nuevo Producto
+              </Button>
+            </>
+          )}
+        </div>
       </div>
 
       {error && <Alert type="error" message={error} onClose={() => setError('')} />}
@@ -142,12 +165,31 @@ const ProductsPage = () => {
                 </div>
                 {user?.role === 'gerente' && (
                   <div className="flex gap-2">
-                    <Button variant="secondary" onClick={() => handleEdit(product)} className="text-sm px-3 py-1">
-                      ✏️
-                    </Button>
-                    <Button variant="danger" onClick={() => handleDelete(product.id)} className="text-sm px-3 py-1">
-                      🗑️
-                    </Button>
+                    {product.active ? (
+                      <>
+                        <Button 
+                          variant="secondary" 
+                          onClick={() => handleEdit(product)} 
+                          className="text-sm px-3 py-1"
+                          icon={Edit2}
+                        />
+                        <Button 
+                          variant="danger" 
+                          onClick={() => handleDelete(product.id)} 
+                          className="text-sm px-3 py-1"
+                          icon={Trash2}
+                        />
+                      </>
+                    ) : (
+                      <Button 
+                        variant="success" 
+                        onClick={() => handleReactivate(product.id)} 
+                        className="text-sm px-3 py-1"
+                        icon={RotateCcw}
+                      >
+                        Reactivar
+                      </Button>
+                    )}
                   </div>
                 )}
               </div>
