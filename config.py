@@ -41,12 +41,13 @@ class Config:
     )
     
     # Configuración del Worker Outbox
-    OUTBOX_POLL_INTERVAL = 5
+    OUTBOX_POLL_INTERVAL = 60
     OUTBOX_BATCH_SIZE = 10
     OUTBOX_MAX_RETRIES = 3
     
     # CORS
-    CORS_ORIGINS = os.getenv('CORS_ORIGINS', 'http://localhost:3000').split(',')
+    # CORS
+    CORS_ORIGINS = os.getenv('CORS_ORIGINS', 'http://localhost:3000,http://localhost:5173').split(',')
     
     # Logging
     LOG_LEVEL = os.getenv('LOG_LEVEL', 'INFO')
